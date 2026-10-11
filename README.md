@@ -1,4 +1,4 @@
-# 📄 Docent
+# 📄 Docent — AI Document Q&A Assistant
 
 **Chat with any PDF.** Upload a document, ask questions, get cited answers — streaming live.
 
