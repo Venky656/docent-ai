@@ -4,7 +4,7 @@ body{margin:0;font-family:"Inter",-apple-system,"Segoe UI",sans-serif;background
 .app-shell{max-width:960px;margin:auto;padding:48px 20px 60px}
 .topbar{display:flex;align-items:center;gap:12px;margin-bottom:28px}
 .logo-mark{width:40px;height:40px;border-radius:11px;overflow:hidden;flex-shrink:0;display:grid;place-items:center}
-.logo-mark img{width:40px;height:40px;display:block;object-fit:cover}
+.logo-mark img,.logo-mark svg{width:40px;height:40px;display:block}
 .topbar .brand h1{margin:0;font-size:1.35rem;letter-spacing:-.01em}
 .topbar .brand p{margin:2px 0 0;color:var(--muted);font-size:.88rem}
 .hero{margin-bottom:24px}
