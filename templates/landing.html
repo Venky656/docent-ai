@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1"/>
+  <title>Docent — AI Document Q&A Assistant</title>
+  <link rel="icon" href="{{ url_for('static', filename='logo.png') }}" type="image/png">
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
+</head>
+<body>
+
+<div class="landing">
+  <nav class="landing-nav">
+    <div class="nav-brand">
+      <div class="logo-mark"><img src="{{ url_for('static', filename='logo.png') }}" alt="Docent logo" width="40" height="40"/></div>
+      <span>Docent</span>
+    </div>
+    <a class="nav-cta" href="/app">Open App</a>
+  </nav>
+
+  <header class="landing-hero">
+    <p class="eyebrow">AI Document Q&amp;A Assistant</p>
+    <h1>Stop reading. Start asking.</h1>
+    <p class="lede">Upload any PDF and chat with it. Docent finds the relevant pages and answers with citations — so you never read a 60-page document cover to cover again.</p>
+    <div class="hero-actions">
+      <a class="btn-primary" href="/app">Try it now — free</a>
+      <a class="btn-ghost" href="#how">How it works</a>
+    </div>
+  </header>
+
+  <section class="landing-section" id="how">
+    <h2>How to use</h2>
+    <div class="steps">
+      <div class="step">
+        <div class="step-num">1</div>
+        <h3>Upload a PDF</h3>
+        <p>Drop any PDF — reports, papers, resumes, manuals. Scanned pages are read with built-in OCR.</p>
+      </div>
+      <div class="step">
+        <div class="step-num">2</div>
+        <h3>Ask anything</h3>
+        <p>Type questions in plain language. Try the suggested questions or follow up — it remembers context.</p>
+      </div>
+      <div class="step">
+        <div class="step-num">3</div>
+        <h3>Get cited answers</h3>
+        <p>Answers stream live, each traced to its source as <em>[file, page]</em>. Verify anything in one click.</p>
+      </div>
+    </div>
+  </section>
+
+  <section class="landing-section">
+    <h2>Why Docent</h2>
+    <div class="features">
+      <div class="feature">
+        <h3>📑 Page-level citations</h3>
+        <p>Every claim links back to the exact page it came from. No blind trust.</p>
+      </div>
+      <div class="feature">
+        <h3>⚡ Live streaming</h3>
+        <p>Answers appear token by token — fast, even on long documents.</p>
+      </div>
+      <div class="feature">
+        <h3>🔍 Smart retrieval</h3>
+        <p>Semantic search over your document finds meaning, not just keywords.</p>
+      </div>
+      <div class="feature">
+        <h3>📷 Reads scans too</h3>
+        <p>Image-only PDFs fall back to OCR automatically. Nothing uploaded goes unread.</p>
+      </div>
+      <div class="feature">
+        <h3>💬 Follow-ups</h3>
+        <p>Multi-turn conversation memory. Ask, then dig deeper.</p>
+      </div>
+      <div class="feature">
+        <h3>🔒 Private by design</h3>
+        <p>Your documents live in your session only and auto-expire after 24 hours.</p>
+      </div>
+    </div>
+  </section>
+
+  <section class="landing-cta">
+    <h2>Your next PDF is one question away</h2>
+    <a class="btn-primary" href="/app">Open Docent — free</a>
+  </section>
+
+  <section class="landing-section about">
+    <div class="about-card">
+      <div class="about-avatar">V</div>
+      <div>
+        <h2>Built by Venky</h2>
+        <p>Hi, I'm <strong>Venkaiah Swamy Kalikaya</strong> — a developer who enjoys building AI-powered web apps that solve real problems. Docent started as my way of never reading a 60-page PDF cover to cover again: retrieval-augmented generation, semantic search, and honest, cited answers.</p>
+        <div class="about-links">
+          <a href="https://www.linkedin.com/in/venkaiah-swamy-kalikaya/" target="_blank" rel="noopener">LinkedIn</a>
+          <a href="https://github.com/Venky656" target="_blank" rel="noopener">GitHub</a>
+          <a href="https://venky-portfolio-v1.vercel.app/" target="_blank" rel="noopener">Portfolio</a>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <footer class="footer">Docent · Grounded answers with page-level citations</footer>
+</div>
+
+</body>
+</html>

@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1"/>
+  <title>Docent — AI Document Q&A Assistant</title>
+  <link rel="icon" href="{{ url_for('static', filename='logo.png') }}" type="image/png">
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/dompurify@3.0.9/dist/purify.min.js"></script>
+</head>
+<body>
+
+<main class="app-shell">
+  <header class="topbar">
+    <div class="logo-mark"><img src="{{ url_for('static', filename='logo.png') }}" alt="Docent logo" width="40" height="40"/></div>
+    <div class="brand">
+      <h1>Docent</h1>
+      <p>AI Document Q&amp;A Assistant</p>
+    </div>
+    <a class="back-link" href="/" style="margin-left:auto">← Home</a>
+  </header>
+
+  <section class="card upload-section">
+    <h3>Step 1 &middot; Upload PDF</h3>
+    <label id="dropzone" class="dropzone" for="fileInput" tabindex="0">
+      <input type="file" id="fileInput" accept=".pdf" hidden/>
+      <span class="dz-icon">📄</span>
+      <span><strong>Drop PDF here or click to browse</strong></span>
+      <span class="dz-hint">PDF only &middot; max 20 MB</span>
+    </label>
+    <div id="currentDoc" class="current-doc" aria-live="polite"></div>
+    <div class="upload-row">
+      <button id="uploadBtn" class="primary-btn" onclick="uploadFile()">Upload</button>
+      <div class="progress" id="uploadProgress" hidden>
+        <div class="progress-bar" id="uploadBar"></div>
+      </div>
+    </div>
+    <p id="uploadStatus" class="toast" role="status"></p>
+  </section>
+
+  <section class="card chat-section">
+    <header class="card-header">
+      <div>
+        <h2>Step 2 &middot; Chat</h2>
+        <p>Ask anything about your document</p>
+      </div>
+      <div class="header-actions">
+        <div class="status" id="docStatus">
+          <span class="dot" id="docDot"></span>
+          <span id="docStatusText">No document</span>
+        </div>
+        <button id="clearBtn" class="ghost-btn" onclick="clearDoc()">Clear</button>
+      </div>
+    </header>
+
+    <div id="chatBox" class="chat-box" role="log" aria-live="polite">
+      <div class="message bot">
+        <div class="avatar">D</div>
+        <div class="bubble">Upload a PDF above to start chatting!</div>
+      </div>
+    </div>
+
+    <form id="chatForm" class="input-area">
+      <input type="text" id="questionInput" placeholder="Upload a PDF first…" autocomplete="off" disabled/>
+      <button type="submit" id="sendBtn" disabled>Ask</button>
+    </form>
+    <p id="chatHint" class="hint">Press Enter to send</p>
+  </section>
+
+  <footer class="footer">Docent · Grounded answers with page-level citations</footer>
+</main>
+
+<script>
+const chatBox=document.getElementById("chatBox"),chatForm=document.getElementById("chatForm"),questionInput=document.getElementById("questionInput"),sendBtn=document.getElementById("sendBtn"),uploadBtn=document.getElementById("uploadBtn"),dropzone=document.getElementById("dropzone"),fileInput=document.getElementById("fileInput"),currentDoc=document.getElementById("currentDoc"),uploadStatus=document.getElementById("uploadStatus"),uploadProgress=document.getElementById("uploadProgress"),uploadBar=document.getElementById("uploadBar"),docStatus=document.getElementById("docStatus"),docStatusText=document.getElementById("docStatusText"),docDot=document.getElementById("docDot"),clearBtn=document.getElementById("clearBtn");
+let docLoaded=false,selectedFile=null,abortCtrl=null,sessionId=localStorage.getItem("rag_sid"),chatHistory=[];
+function saveSession(){if(sessionId)localStorage.setItem("rag_sid",sessionId);}
+
+function setStatus(l,f){docLoaded=l;docStatus.classList.toggle("is-ready",l);docStatusText.textContent=l?`Ready: ${f}`:"No document";docDot.style.background=l?"#22c55e":"#64748b";questionInput.disabled=!l;sendBtn.disabled=!l;questionInput.placeholder=l?"Type your question…":"Upload a PDF first…";clearBtn.disabled=!l;}
+function showCurrentDoc(f,c){currentDoc.innerHTML=f?`<span class="current-doc-badge">📄 ${f} · ${c} chunks</span>`:"";}
+function setToast(m,k="info"){uploadStatus.textContent=m;uploadStatus.className=`toast show ${k}`;setTimeout(()=>uploadStatus.classList.remove("show"),5000);}
+
+function addMessage(t,s){const el=document.createElement("div");el.className=`message ${s}`;const b=s==="bot"?renderMarkdown(t):escapeHtml(t);el.innerHTML=`<div class="avatar">${s==="user"?"You":"D"}</div><div class="bubble">${b}</div>`;chatBox.appendChild(el);scrollBottom();return el;}
+function nearBottom(){return chatBox.scrollHeight-chatBox.scrollTop-chatBox.clientHeight<140;}
+function scrollBottom(){chatBox.scrollTop=chatBox.scrollHeight;}
+function escapeHtml(t){const d=document.createElement("div");d.textContent=t;return d.innerHTML;}
+function renderMarkdown(t){const r=marked.parse(t||"");return window.DOMPurify?DOMPurify.sanitize(r):escapeHtml(t);}
+
+function thinkingBubble(){const el=document.createElement("div");el.className="message bot";el.innerHTML=`<div class="avatar">D</div><div class="bubble thinking"><span></span><span></span><span></span></div>`;chatBox.appendChild(el);scrollBottom();return el.querySelector(".bubble");}
+function sourcesBlock(srcs){const d=document.createElement("details");d.className="sources";const sum=document.createElement("summary");sum.textContent=`Sources (${srcs.length})`;d.appendChild(sum);const ol=document.createElement("ol");srcs.forEach(s=>{const li=document.createElement("li");const b=document.createElement("strong");b.textContent=s.file||"?";li.appendChild(b);li.appendChild(document.createTextNode(` · Page ${s.page??"?"}`));li.appendChild(document.createElement("br"));const pv=document.createElement("span");pv.className="src-preview";pv.textContent=(s.preview||"")+"…";li.appendChild(pv);ol.appendChild(li);});d.appendChild(ol);return d;}
+function copyBtn(getText){const b=document.createElement("button");b.className="copy-btn";b.type="button";b.textContent="Copy";b.onclick=async()=>{try{await navigator.clipboard.writeText(getText());b.textContent="Copied!";setTimeout(()=>b.textContent="Copy",1500);}catch{}};return b;}
+function suggestionChips(list){const wrap=document.createElement("div");wrap.className="sugg-chips";list.slice(0,3).forEach(q=>{const btn=document.createElement("button");btn.type="button";btn.textContent=q;btn.onclick=()=>{questionInput.value=q;chatForm.requestSubmit();};wrap.appendChild(btn);});return wrap;}
+function friendlyError(m){const s=String(m);if(/quota|429/i.test(s))return"Quota reached — wait 60s and retry.";if(/401|403|invalid key/i.test(s))return"Invalid API key. Check .env file.";return s.length>200?s.slice(0,200)+"…":s;}
+
+async function streamAsk(q,b){abortCtrl=new AbortController();const h={"Content-Type":"application/json"};if(sessionId)h["X-Session-ID"]=sessionId;const r=await fetch("/ask_stream",{method:"POST",headers:h,body:JSON.stringify({query:q,history:chatHistory}),signal:abortCtrl.signal});if(!r.ok){const d=await r.json().catch(()=>({}));throw new Error(d.error||`Error ${r.status}`);}const reader=r.body.getReader(),dec=new TextDecoder();let buf="",full="",sources=[];while(true){const{done,value}=await reader.read();if(done)break;buf+=dec.decode(value,{stream:true});let idx;while((idx=buf.indexOf("\n\n"))!==-1){const raw=buf.slice(0,idx);buf=buf.slice(idx+2);let ev="",dl=[];for(const l of raw.split("\n")){if(l.startsWith("event:"))ev=l.slice(6).trim();else if(l.startsWith("data:"))dl.push(l.slice(5).trim());}let p={};try{p=JSON.parse(dl.join("\n")||"{}");}catch{}if(ev==="token"){full+=p.text||"";b.innerHTML=renderMarkdown(full);if(nearBottom())scrollBottom();}else if(ev==="sources"){sources=p.sources||[];}else if(ev==="error")throw new Error(p.error);}}b.classList.remove("thinking");return{full,sources};}
+
+chatForm.addEventListener("submit",async e=>{e.preventDefault();const q=questionInput.value.trim();if(!q||sendBtn.disabled)return;addMessage(q,"user");chatHistory.push({role:"user",content:q});questionInput.value="";sendBtn.disabled=true;const b=thinkingBubble();try{const{full,sources}=await streamAsk(q,b);if(full){chatHistory.push({role:"assistant",content:full});if(sources?.length)b.appendChild(sourcesBlock(sources));b.appendChild(copyBtn(()=>full));scrollBottom();}}catch(err){b.innerHTML=renderMarkdown(friendlyError(err.message));b.classList.remove("thinking");}finally{sendBtn.disabled=!docLoaded;abortCtrl=null;questionInput.focus();}});
+
+dropzone.addEventListener("click",()=>fileInput.click());
+dropzone.addEventListener("keydown",e=>{if(e.key==="Enter"||e.key===" "){e.preventDefault();fileInput.click();}});
+fileInput.addEventListener("change",()=>{if(fileInput.files.length){selectedFile=fileInput.files[0];dropzone.innerHTML=`<span class="dz-icon">✅</span><span><strong>${selectedFile.name}</strong></span><span class="dz-hint">${(selectedFile.size/1048576).toFixed(1)} MB</span>`;}});
+["dragenter","dragover"].forEach(ev=>dropzone.addEventListener(ev,e=>{e.preventDefault();dropzone.classList.add("drag");}));
+["dragleave","drop"].forEach(ev=>dropzone.addEventListener(ev,e=>{e.preventDefault();dropzone.classList.remove("drag");}));
+dropzone.addEventListener("drop",e=>{if(e.dataTransfer?.files?.length){fileInput.files=e.dataTransfer.files;selectedFile=e.dataTransfer.files[0];dropzone.innerHTML=`<span class="dz-icon">✅</span><span><strong>${selectedFile.name}</strong></span><span class="dz-hint">${(selectedFile.size/1048576).toFixed(1)} MB</span>`;}});
+
+function uploadWithProgress(fd){return new Promise((res,rej)=>{const x=new XMLHttpRequest();x.open("POST","/upload");x.upload.onprogress=e=>{if(e.lengthComputable){uploadProgress.hidden=false;uploadBar.style.width=`${Math.round(e.loaded/e.total*100)}%`;}};x.onload=()=>{const s=x.getResponseHeader("X-Session-ID");if(s){sessionId=s;saveSession();}try{res({status:x.status,data:JSON.parse(x.responseText||"{}")});}catch{res({status:x.status,data:{}});}};x.onerror=()=>rej(new Error("Network error"));x.send(fd);});}
+
+async function uploadFile(){if(!selectedFile&&fileInput.files?.length)selectedFile=fileInput.files[0];if(!selectedFile){setToast("Please select a PDF file first.","error");fileInput.click();return;}if(!/\.pdf$/i.test(selectedFile.name)){setToast("Only PDF files allowed.","error");return;}if(selectedFile.size>20971520){setToast("File too large (max 20 MB).","error");return;}const fd=new FormData();fd.append("file",selectedFile,selectedFile.name);uploadBtn.disabled=true;uploadProgress.hidden=false;uploadBar.style.width="2%";setToast("Uploading…","info");try{const{status,data}=await uploadWithProgress(fd);uploadBar.style.width="100%";if(status<200||status>=300){setToast(data.error||"Upload failed.","error");return;}setToast(data.message,"success");showCurrentDoc(data.filename,data.chunks);setStatus(true,data.filename);fileInput.value="";selectedFile=null;dropzone.innerHTML=`<span class="dz-icon">📄</span><span><strong>Drop PDF here or click to browse</strong></span><span class="dz-hint">PDF only · max 20 MB</span>`;questionInput.focus();if(data.suggestions?.length){const m=addMessage("Here are some questions to try — tap one:", "bot");m.querySelector(".bubble").appendChild(suggestionChips(data.suggestions));scrollBottom();}}catch{setToast("Upload failed.","error");}finally{uploadBtn.disabled=false;setTimeout(()=>{uploadProgress.hidden=true;uploadBar.style.width="0%";},800);}}
+
+async function clearDoc(){if(!docLoaded)return;const h={};if(sessionId)h["X-Session-ID"]=sessionId;await fetch("/documents",{method:"DELETE",headers:h});sessionId=null;localStorage.removeItem("rag_sid");chatHistory=[];showCurrentDoc(null,0);setStatus(false,null);chatBox.innerHTML=`<div class="message bot"><div class="avatar">D</div><div class="bubble">Document cleared. Upload a new PDF to continue.</div></div>`;setToast("Cleared.","info");}
+async function restoreSession(){if(!sessionId)return;try{const r=await fetch("/status",{headers:{"X-Session-ID":sessionId}});const d=await r.json();const ns=r.headers.get("X-Session-ID");if(ns){sessionId=ns;saveSession();}if(d.ready){showCurrentDoc(d.filename,d.chunks);setStatus(true,d.filename);addMessage(`Session restored — continuing with ${d.filename}. Ask me anything!`,"bot");}else{sessionId=null;localStorage.removeItem("rag_sid");}}catch{}}
+setStatus(false,null);
+restoreSession();
+</script>
+</body>
+</html>
