@@ -1,0 +1,15 @@
+services:
+  - type: web
+    name: docent-ai
+    runtime: docker
+    plan: free
+    healthCheckPath: /
+    envVars:
+      - key: LLM_PROVIDER
+        value: groq
+      - key: GROK_MODEL
+        value: openai/gpt-oss-20b
+      - key: GROQ_API_KEY
+        sync: false
+      - key: SESSION_TTL_HOURS
+        value: 24

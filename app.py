@@ -488,4 +488,4 @@ Give a helpful, complete answer based on the document context above. Use markdow
 
 if __name__ == "__main__":
     prune_old_sessions()
-    app.run(debug=False, host="0.0.0.0", port=8080)
+    app.run(debug=False, host="0.0.0.0", port=int(os.getenv("PORT", "8080")))
