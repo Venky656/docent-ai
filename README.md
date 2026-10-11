@@ -1,36 +1,38 @@
-# Docent — AI Document Q&A Assistant
+# 📄 Docent
 
-Upload any PDF and chat with it. Answers stream live with page-level citations.
+**Chat with any PDF.** Upload a document, ask questions, get cited answers — streaming live.
 
-## Quick start
+![Python](https://img.shields.io/badge/Python-3.10-blue)
+![Flask](https://img.shields.io/badge/Flask-3-black)
+![Groq](https://img.shields.io/badge/LLM-Groq_free-orange)
+![FAISS](https://img.shields.io/badge/Vector-FAISS-green)
+
+## ✨ What it does
+
+- Upload PDFs (OCR reads scanned pages too)
+- ChatGPT-style answers with markdown + tables
+- Every answer cites its source page, with a Sources panel
+- Tap-to-ask suggestion chips on every upload
+- Sessions survive refresh & restarts
+
+## 🚀 Run it
 
 ```bash
-cp .env.example .env   # add your API key (see below)
+cp .env.example .env   # paste a free Groq key from console.groq.com
 pip install -r requirements.txt
-python app.py          # open http://localhost:8080
+python app.py
 ```
 
-Get a free key: [Groq](https://console.groq.com) (`gsk_...`, recommended) or [Gemini](https://aistudio.google.com/app/apikey) (`AIza...`).
+Open → http://localhost:8080
 
-## How it works
+## ⚙️ Switch models
 
-PDF → extract text (pypdf → PyMuPDF → OCR) → chunk → embed (MiniLM) → FAISS → top-k retrieval → grounded, streamed answer with sources.
+One var in `.env`: `LLM_PROVIDER=groq` (free) · `gemini` · `grok`. More knobs in `.env.example`.
 
-## Configure
+## 🏗️ Inside
 
-`LLM_PROVIDER`: `groq` · `gemini` · `grok`. Key knobs in `.env`: `RETRIEVAL_K` (5), `MAX_CHUNK_CHARS` (600), `MAX_HISTORY_TURNS` (4), `MAX_OUTPUT_TOKENS` (1200). See `.env.example` for all options.
+`app.py` · `templates/` · `static/css/` · `samples/` · `tests/` (`python tests/smoke_test.py`)
 
-## Project layout
+## 👤 Author
 
-```
-app.py                 Flask app + RAG pipeline
-templates/             landing.html (/) · app.html (/app)
-static/css/            stylesheet
-samples/               test PDFs
-tests/                 smoke test (python tests/smoke_test.py)
-data/sessions/         per-session index (git-ignored, 24h expiry)
-```
-
-## Built by
-
-**Venkaiah Swamy Kalikaya** — [LinkedIn](https://www.linkedin.com/in/venkaiah-swamy-kalikaya/) · [GitHub](https://github.com/Venky656) · [Portfolio](https://venky-portfolio-v1.vercel.app/)
+**Venkaiah Swamy Kalikaya** · [LinkedIn](https://www.linkedin.com/in/venkaiah-swamy-kalikaya/) · [GitHub](https://github.com/Venky656) · [Portfolio](https://venky-portfolio-v1.vercel.app/)
