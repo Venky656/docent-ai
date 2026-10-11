@@ -15,7 +15,6 @@ from langchain_community.document_loaders import PyPDFLoader
 from langchain_core.documents import Document
 from langchain_text_splitters import RecursiveCharacterTextSplitter
 from langchain_community.vectorstores import FAISS
-from langchain_huggingface import HuggingFaceEmbeddings
 
 load_dotenv()
 
@@ -122,12 +121,26 @@ SYSTEM_PROMPT = (
     "keeping them narrow (max 3 columns, short cell text)."
 )
 
-print("Loading embeddings...")
-embeddings = HuggingFaceEmbeddings(model_name="sentence-transformers/all-MiniLM-L6-v2")
-print("Ready.")
+print("Embeddings will load lazily on first request...")
+
+_embeddings = None
+
+def get_embeddings():
+    """Lazy-load embeddings (critical for Vercel serverless cold starts)."""
+    global _embeddings
+    if _embeddings is None:
+        from langchain_huggingface import HuggingFaceEmbeddings
+        print("Loading embeddings...", flush=True)
+        _embeddings = HuggingFaceEmbeddings(model_name="sentence-transformers/all-MiniLM-L6-v2")
+        print("Ready.", flush=True)
+    return _embeddings
 
 SESSIONS = {}
-SESSIONS_ROOT = os.path.join(os.path.dirname(os.path.abspath(__file__)), "data", "sessions")
+# Vercel serverless filesystem is read-only except /tmp
+if os.getenv("VERCEL") == "1" or os.getenv("VERCEL_ENV"):
+    SESSIONS_ROOT = "/tmp/sessions"
+else:
+    SESSIONS_ROOT = os.path.join(os.path.dirname(os.path.abspath(__file__)), "data", "sessions")
 os.makedirs(SESSIONS_ROOT, exist_ok=True)
 SESSION_TTL_SECONDS = int(os.getenv("SESSION_TTL_HOURS", "24")) * 3600
 
@@ -159,7 +172,7 @@ def load_session_from_disk(sid):
     try:
         with open(p["meta"]) as f:
             meta = json.load(f)
-        db = FAISS.load_local(p["faiss_dir"], embeddings, allow_dangerous_deserialization=True)
+        db = FAISS.load_local(p["faiss_dir"], get_embeddings(), allow_dangerous_deserialization=True)
         name = meta.get("filename") or "document.pdf"
         return {
             "vector_db": db,
@@ -283,7 +296,7 @@ def is_transient_error(e):
 
 @app.route("/")
 def home():
-    return render_template("landing.html")
+    return render_template("app.html")
 
 @app.route("/app")
 def app_page():
@@ -345,7 +358,7 @@ def upload():
         sess["documents"] = {filename: {"path": path, "chunks": chunks, "count": len(chunks)}}
         faiss_dir = sess["faiss_dir"]
         os.makedirs(faiss_dir, exist_ok=True)
-        sess["vector_db"] = FAISS.from_documents(chunks, embeddings)
+        sess["vector_db"] = FAISS.from_documents(chunks, get_embeddings())
         sess["vector_db"].save_local(faiss_dir)
         save_session_meta(getattr(g, "sid", ""), sess)
     except Exception as e:
