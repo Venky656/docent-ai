@@ -287,7 +287,7 @@ def home():
 
 @app.route("/app")
 def app_page():
-    return render_template("index.html")
+    return render_template("app.html")
 
 @app.route("/favicon.ico")
 def favicon():
